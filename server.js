@@ -32,12 +32,13 @@ app.use((req, res, next) => {
 		express.json()(req, res, next)
 	}
 })
-app.use(
+app.use(cors())
+/*app.use(
 	cors({
 		origin: process.env.CLIENT_URL,
 		credentials: true,
 	}),
-)
+)*/
 app.use(store)
 app.use(login)
 
