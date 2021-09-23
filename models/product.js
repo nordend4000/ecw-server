@@ -1,0 +1,31 @@
+const mongoose = require("mongoose")
+const product = new mongoose.Schema({
+	id: Number,
+	name: String,
+	location: String,
+	description: String,
+	categorie: String,
+	categorieText: String,
+	gallery: String,
+	galleryText: String,
+	reference: String,
+	url: String,
+	attachment: String,
+	camera: String,
+	lens: String,
+	aperture: String,
+	shutterSpeed: String,
+	focalLenght: String,
+	height: Number,
+	width: Number,
+	size: Number,
+	canvas: Number,
+	digital: Number,
+	metal: Number,
+	paper: Number,
+	large: Number,
+	medium: Number,
+	standard: Number,
+})
+
+module.exports = mongoose.model("Product", product)
