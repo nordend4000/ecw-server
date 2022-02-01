@@ -333,7 +333,7 @@ function clearGlobalVariable() {
 	customerId = ""
 	customerEmail = ""
 }
-//---------------------------------------------    RESET PASSWORD --------------------------------------
+//---------------------------------------------    RESET PASSWORD ------------------------------------
 app.put("/reset-password", (req, res) => {
 	const email = req.body.email
 	const newPassword = uuidv4()
@@ -374,8 +374,7 @@ app.put("/reset-password", (req, res) => {
 		}
 	})
 })
-
-//----------------------------------------- Start Server ---------------------------------------------------
+//----------------------------------------- Start Server -------------------------------------------------
 app.listen(port, () => {
 	console.log(`Server running on port ${port}!`)
 })
