@@ -6,13 +6,13 @@ const Order = require("./models/order")
 const User = require("./models/user")
 const store = require("./routes/store")
 const login = require("./routes/login")
-const nodemailer = require("nodemailer")
 const { v4: uuidv4 } = require("uuid")
 const bcrypt = require("bcryptjs")
 const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY)
 const webhookSecret = process.env.STRIPE_SECRET_END_POINT
 const app = express()
 const port = process.env.PORT || 4000
+const axios = require("axios")
 //----------------------------------------- INIT DATABASE ---------------------------------------------------
 mongoose.connect(process.env.MONGO_URI, {
 	useNewUrlParser: true,
@@ -42,16 +42,6 @@ app.use(
 app.use(store)
 app.use(login)
 
-//----------------------------------------- EMAIL INIT ---------------------------------------------------
-let transporter = nodemailer.createTransport({
-	host: process.env.NODEMAILER_HOST,
-	port: process.env.NODEMAILER_PORT,
-	secure: false,
-	auth: {
-		user: process.env.NODEMAILER_USER,
-		pass: process.env.NODEMAILER_PASSWORD,
-	},
-})
 //---------------------------------------------   GET Order DATA   --------------------------------------
 app.get("/order/:id", async (req, res) => {
 	const idToFind = req.params.id
@@ -246,33 +236,34 @@ const fulfillOrder = session => {
 		printMessage =
 			"We will start your printing as soon as possible and send you an email with upcoming expedition date."
 	}
-	let mailOptions = {
-		from: process.env.NODEMAILER_USER,
-		to: customerEmail,
-		subject: `Order Confirmation : Rebecca ANDERSON Photography`,
-		html: `
-				<div>
-					<h1>Rebecca ANDERSON Photography</h1>
-					<h4>Order Confirmation N°${orderId}</h4>
-					<div>Thanks for your purchase. Your paiement of ${
-						price / 100
-					} € has been approved.</div><br>
-					<h4>YOUR ORDER : </h4>
-					<ol>${listOfProductsEmail.toString().replace(/,/g, " <br> ")}</ol><br>
-					<div>${digitMessage}</div>
-					<br><p>${printMessage}</p><br>
-					<p>Have a great day</p>
-					<p>Rebecca ANDERSON De La Llana</p>
-				</div>
-			`,
+
+	// send email
+	const resetEmail = {
+		service_id: process.env.EMAILJS_SERVICE2,
+		template_id: process.env.EMAILJS_TEMPLATE_PURCHASED,
+		user_id: process.env.EMAILJS_KEY2,
+		template_params: {
+			user_email: customerEmail,
+			order_price: price / 100,
+			order_id: orderId,
+			order_list: listOfProductsEmail.toString().replace(/,/g, " <br> "),
+			digit_message: digitMessage,
+			print_message: printMessage,
+		},
 	}
-	transporter.sendMail(mailOptions, function (error, info) {
-		if (error) {
+	axios
+		.post(process.env.EMAILJS_API, {
+			type: "POST",
+			data: JSON.stringify(resetEmail),
+			contentType: "application/json",
+		})
+		.then(function (response) {
+			console.log("Email sent: ", response)
+		})
+		.catch(function (error) {
 			console.log(error)
-		} else {
-			console.log("Email sent: " + info.response)
-		}
-	})
+		})
+
 	let status = "pending"
 	if (diffPrice === "diff price") status = "validating"
 	if (
@@ -356,98 +347,34 @@ app.put("/reset-password", (req, res) => {
 			const hashedPassword = await bcrypt.hash(newPassword, 10)
 			doc.password = hashedPassword
 			doc.save()
-			let mailOptions = {
-				from: process.env.NODEMAILER_USER,
-				to: email,
-				subject: `RESET YOUR PASSWORD : Rebecca ANDERSON Photography`,
-				html: `
-				<div>
-					<h1>Rebecca ANDERSON Photography</h1>
-					<h4>Reset Your Password</h4>
-					<div>You just requested a new password to connect to your account.</div><br>
-					<p>Your new password is :  ${newPassword}</p>
-					<a href="${process.env.CLIENT_URL}/login">Click here to connect to your account</a>
-					<p>You can change your password at anytime in My Account</p>
-					<br>
-					<p>Have a great day</p>
-					<p>Rebecca ANDERSON De La Llana</p>
-				</div>
-			`,
+			// send email
+			const resetEmail = {
+				service_id: process.env.EMAILJS_SERVICE,
+				template_id: process.env.EMAILJS_TEMPLATE_RESET,
+				user_id: process.env.EMAILJS_KEY,
+				template_params: {
+					user_email: email,
+					new_password: newPassword,
+				},
 			}
-			transporter.sendMail(mailOptions, function (error, info) {
-				if (error) {
-					console.log(error)
-					res.send("new password saved but email not sent")
-				} else {
-					console.log("Email sent: " + info.response)
+			axios
+				.post(process.env.EMAILJS_API, {
+					type: "POST",
+					data: JSON.stringify(resetEmail),
+					contentType: "application/json",
+				})
+				.then(function (response) {
+					console.log("Email sent: ", response)
 					res.send("new password saved and email sent")
-				}
-			})
+				})
+				.catch(function (error) {
+					console.log("Error : ", error)
+					res.send("new password saved but email not sent")
+				})
 		}
 	})
 })
-//---------------------------------------------    CONTACT FORM    --------------------------------------
-app.post("/contact-form", (req, res) => {
-	const email = req.body.email
-	const name = req.body.name
-	const message = req.body.message
-	const customerId = req.body.customerId
-	let mailOptions = {
-		from: email,
-		to: process.env.NODEMAILER_USER,
-		subject: `CONTACT FORM SUBMITTED : Rebecca ANDERSON Photography`,
-		html: `
-				<div>
-					<h1>Message from ${name}</h1>
-					<h4>Email : ${email}</h4>
-					<div>Message :</div>
-					<div>${message}</div>
-					<br>
-					<p>customer id : ${customerId}</p>
-				</div>
-			`,
-	}
-	let mailOptions2 = {
-		from: process.env.NODEMAILER_USER,
-		to: email,
-		subject: `CONTACT FORM SUBMITTED : Rebecca ANDERSON Photography`,
-		html: `
-				<div>
-					<h1>Rebecca ANDERSON Photography</h1>
-					<h4>Hello ${name}</h4>
-					<div>Your message has been sent successfuly. <div>
-					<br>
-					<div>Your Message :</div>
-					<div>${message}</div>
-					<p>from email: ${email}</p>
-					<br>
-					<p>Thanks for your interest, I will answer you as soon as possible...</p>
-					<p>Rebecca ANDERSON Photography</p>
-				</div>
-			`,
-	}
-	transporter.sendMail(mailOptions, function (error, info) {
-		if (error) {
-			console.log(error)
-			res.send(
-				"Ooops something wrong happened, please try again to send your message.",
-			)
-		} else {
-			transporter.sendMail(mailOptions2, function (error, info) {
-				if (error) {
-					console.log(error)
-					res.send(
-						"Ooops something wrong happened, please try again to send your message.",
-					)
-				} else {
-					res.send(
-						"Your message has been sent successfuly. Thanks for your interest, I will answer you as soon as possible...",
-					)
-				}
-			})
-		}
-	})
-})
+
 //----------------------------------------- Start Server ---------------------------------------------------
 app.listen(port, () => {
 	console.log(`Server running on port ${port}!`)
