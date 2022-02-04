@@ -106,23 +106,27 @@ app.put("/edit-order", async (req, res) => {
 	const newDateExpedition = req.body.dateExpedition
 	const newStatus = req.body.status
 	const newCurrency = req.body.currency
-	await Order.findById(id, function (err, response) {
-		if (err) {
-			res.send(
-				"Ooops, something wrong happened, try again to update your order",
-			)
-		}
-		if (response) {
-			response.product = newProduct
-			response.price = newPrice
-			response.paiement = newPaiement
-			response.dateExpedition = newDateExpedition
-			response.status = newStatus
-			response.currency = newCurrency
-			response.save()
-			res.send("Your order has been successfuly updated")
-		}
-	})
+	try {
+		await Order.findById(id, function (err, response) {
+			if (err) {
+				res.send(
+					"Ooops, something wrong happened, try again to update your order",
+				)
+			}
+			if (response) {
+				response.product = newProduct
+				response.price = newPrice
+				response.paiement = newPaiement
+				response.dateExpedition = newDateExpedition
+				response.status = newStatus
+				response.currency = newCurrency
+				response.save()
+				res.send("Your order has been successfuly updated")
+			}
+		})
+	} catch (err) {
+		console.log(err)
+	}
 })
 // --------------------------- GLOBAL VARIABLES FROM CHECKOUT TO FULLFILLED (cleared at the end) ---------------------------
 let price = 0
@@ -140,27 +144,31 @@ app.post("/create-checkout-session", async (req, res) => {
 	}
 	customerId = req.body.customerId
 	customerEmail = req.body.customerEmail
-
-	const session = await stripe.checkout.sessions.create({
-		line_items: [
-			{
-				price_data: {
-					currency: "eur",
-					product_data: {
-						name: "Rebecca ANDERSON Photography",
+	try {
+		const session = await stripe.checkout.sessions.create({
+			line_items: [
+				{
+					price_data: {
+						currency: "eur",
+						product_data: {
+							name: "Rebecca ANDERSON Photography",
+						},
+						unit_amount: price,
 					},
-					unit_amount: price,
+					quantity: 1,
 				},
-				quantity: 1,
-			},
-		],
-		payment_method_types: ["card"],
-		mode: "payment",
-		success_url: `${process.env.CLIENT_URL}?stripe-paiement-success=true`,
-		cancel_url: `${process.env.CLIENT_URL}?stripe-paiement-canceled=true`,
-	})
-	res.send(session)
+			],
+			payment_method_types: ["card"],
+			mode: "payment",
+			success_url: `${process.env.CLIENT_URL}?stripe-paiement-success=true`,
+			cancel_url: `${process.env.CLIENT_URL}?stripe-paiement-canceled=true`,
+		})
+		res.send(session)
+	} catch (err) {
+		console.log(err)
+	}
 })
+
 function computePrice(cart) {
 	let subtotal = []
 	cart.forEach(item => {
@@ -357,20 +365,24 @@ app.put("/reset-password", (req, res) => {
 					new_password: newPassword,
 				},
 			}
-			axios
-				.post(process.env.EMAILJS_API, {
-					type: "POST",
-					data: JSON.stringify(resetEmail),
-					contentType: "application/json",
-				})
-				.then(function (response) {
-					console.log("Email sent: ", response)
-					res.send("new password saved and email sent")
-				})
-				.catch(function (error) {
-					console.log("Error : ", error)
-					res.send("new password saved but email not sent")
-				})
+			try {
+				axios
+					.post(process.env.EMAILJS_API, {
+						type: "POST",
+						data: JSON.stringify(resetEmail),
+						contentType: "application/json",
+					})
+					.then(function (response) {
+						console.log("Email sent: ", response)
+						res.send("new password saved and email sent")
+					})
+					.catch(function (error) {
+						console.log("Error : ", error)
+						res.send("new password saved but email not sent")
+					})
+			} catch (err) {
+				console.log(err)
+			}
 		}
 	})
 })

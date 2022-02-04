@@ -125,47 +125,55 @@ router.put("/edit-product", async (req, res) => {
 	const newLarge = req.body.large
 	const newMedium = req.body.medium
 	const newStandard = req.body.standard
-	await Product.findById(idProduct, function (err, response) {
-		if (err) {
-			res.send(
-				"Ooops, something wrong happened, try again to update your new product",
-			)
-		}
-		if (response) {
-			response.id = newId
-			response.name = newName
-			response.location = newLocation
-			response.description = newDescription
-			response.reference = newReference
-			response.categorie = newCategorie
-			response.categorieText = newCategorieText
-			response.gallery = newGallery
-			response.galleryText = newGalleryText
-			response.url = newUrl
-			response.camera = newCamera
-			response.lens = newLens
-			response.aperture = newAperture
-			response.shutterSpeed = newShutterSpeed
-			response.focalLenght = newFocalLenght
-			response.height = newHeight
-			response.width = newWidth
-			response.size = newSize
-			response.canvas = newCanvas
-			response.digital = newDigital
-			response.metal = newMetal
-			response.paper = newPaper
-			response.large = newLarge
-			response.medium = newMedium
-			response.standard = newStandard
-			response.save()
-			res.send("Your product has been successfuly updated")
-		}
-	})
+	try {
+		await Product.findById(idProduct, function (err, response) {
+			if (err) {
+				res.send(
+					"Ooops, something wrong happened, try again to update your new product",
+				)
+			}
+			if (response) {
+				response.id = newId
+				response.name = newName
+				response.location = newLocation
+				response.description = newDescription
+				response.reference = newReference
+				response.categorie = newCategorie
+				response.categorieText = newCategorieText
+				response.gallery = newGallery
+				response.galleryText = newGalleryText
+				response.url = newUrl
+				response.camera = newCamera
+				response.lens = newLens
+				response.aperture = newAperture
+				response.shutterSpeed = newShutterSpeed
+				response.focalLenght = newFocalLenght
+				response.height = newHeight
+				response.width = newWidth
+				response.size = newSize
+				response.canvas = newCanvas
+				response.digital = newDigital
+				response.metal = newMetal
+				response.paper = newPaper
+				response.large = newLarge
+				response.medium = newMedium
+				response.standard = newStandard
+				response.save()
+				res.send("Your product has been successfuly updated")
+			}
+		})
+	} catch (err) {
+		console.log(err)
+	}
 })
 router.delete("/delete-product/:id", async (req, res) => {
 	const id = req.params.id
-	await Product.findByIdAndRemove(id).exec()
-	res.send("deleted")
+	try {
+		await Product.findByIdAndRemove(id).exec()
+		res.send("deleted")
+	} catch (err) {
+		console.log(err)
+	}
 })
 
 module.exports = router
